@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { hasSupabaseEnv } from '../lib/env';
 import { supabase } from '../lib/supabase';
 
 type AuthState = {
@@ -17,9 +18,11 @@ export function useAuth(): AuthState {
 
   useEffect(() => {
     const localUser = localStorage.getItem('mock_user_email');
-    if (localUser) {
-      setUserId('mock-user');
-      setEmail(localUser);
+    if (!hasSupabaseEnv) {
+      if (localUser) {
+        setUserId('mock-user');
+        setEmail(localUser);
+      }
       setLoading(false);
       return;
     }
@@ -39,37 +42,44 @@ export function useAuth(): AuthState {
     return () => sub.subscription.unsubscribe();
   }, []);
 
-  const value = useMemo<AuthState>(() => ({
-    userId,
-    email,
-    loading,
-    async login(userEmail, password) {
-      const { error } = await supabase.auth.signInWithPassword({ email: userEmail, password });
-      if (error) {
-        localStorage.setItem('mock_user_email', userEmail);
-        setUserId('mock-user');
-        setEmail(userEmail);
+  const value = useMemo<AuthState>(
+    () => ({
+      userId,
+      email,
+      loading,
+      async login(userEmail, password) {
+        if (!hasSupabaseEnv) {
+          localStorage.setItem('mock_user_email', userEmail);
+          setUserId('mock-user');
+          setEmail(userEmail);
+          return { error: null };
+        }
+
+        const { error } = await supabase.auth.signInWithPassword({ email: userEmail, password });
+        if (error) return { error: error.message };
         return { error: null };
-      }
-      return { error: null };
-    },
-    async signup(userEmail, password) {
-      const { error } = await supabase.auth.signUp({ email: userEmail, password });
-      if (error) {
-        localStorage.setItem('mock_user_email', userEmail);
-        setUserId('mock-user');
-        setEmail(userEmail);
+      },
+      async signup(userEmail, password) {
+        if (!hasSupabaseEnv) {
+          localStorage.setItem('mock_user_email', userEmail);
+          setUserId('mock-user');
+          setEmail(userEmail);
+          return { error: null };
+        }
+
+        const { error } = await supabase.auth.signUp({ email: userEmail, password });
+        if (error) return { error: error.message };
         return { error: null };
-      }
-      return { error: null };
-    },
-    async logout() {
-      localStorage.removeItem('mock_user_email');
-      setUserId(null);
-      setEmail(null);
-      await supabase.auth.signOut();
-    },
-  }), [userId, email, loading]);
+      },
+      async logout() {
+        localStorage.removeItem('mock_user_email');
+        setUserId(null);
+        setEmail(null);
+        if (hasSupabaseEnv) await supabase.auth.signOut();
+      },
+    }),
+    [userId, email, loading],
+  );
 
   return value;
 }

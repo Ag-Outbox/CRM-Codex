@@ -1,7 +1,10 @@
+import { hasSupabaseEnv } from './env';
 import { supabase } from './supabase';
 import { IncomingLeadPayload } from './types';
 
 export async function persistIncomingLead(payload: IncomingLeadPayload) {
+  if (!hasSupabaseEnv) return { ok: true, error: null };
+
   const { error } = await supabase.rpc('ingest_external_lead', {
     p_name: payload.name,
     p_phone: payload.phone ?? null,

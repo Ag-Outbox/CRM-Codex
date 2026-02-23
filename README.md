@@ -36,10 +36,15 @@ npm run dev
 ```
 
 ## Variáveis
-Crie `.env`:
+Copie o arquivo de exemplo e ajuste:
 ```bash
-VITE_SUPABASE_URL=https://SEU-PROJETO.supabase.co
-VITE_SUPABASE_ANON_KEY=SUA_ANON_KEY
+cp .env.example .env
+```
+
+`.env.example`:
+```bash
+VITE_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
+VITE_SUPABASE_ANON_KEY=YOUR_SUPABASE_ANON_KEY
 ```
 
 ## Banco
@@ -51,6 +56,10 @@ Aplicar:
 ```bash
 supabase db push
 ```
+
+## Preview rápido
+- Sem Supabase configurado: login/onboarding/integrações funcionam em fallback local para demonstração da interface.
+- Com Supabase configurado + migrations aplicadas: onboarding e ingestão passam a persistir de forma real no banco.
 
 ## Rotas
 - `/auth`

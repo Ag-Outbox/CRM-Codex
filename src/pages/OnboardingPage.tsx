@@ -1,5 +1,6 @@
 import { FormEvent, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { hasSupabaseEnv } from '../lib/env';
 import { supabase } from '../lib/supabase';
 
 export function OnboardingPage() {
@@ -17,6 +18,13 @@ export function OnboardingPage() {
     setError(null);
 
     const slug = name.toLowerCase().trim().replace(/\s+/g, '-');
+
+    if (!hasSupabaseEnv) {
+      localStorage.setItem('active_org', JSON.stringify({ id: `local-${slug}`, name }));
+      navigate('/crm/dashboard');
+      return;
+    }
+
     const { data, error: rpcError } = await supabase.rpc('create_organization_and_admin_membership', {
       p_name: name,
       p_slug: slug,
@@ -25,8 +33,8 @@ export function OnboardingPage() {
     });
 
     if (rpcError) {
-      localStorage.setItem('active_org', JSON.stringify({ id: `local-${slug}`, name }));
-      navigate('/crm/dashboard');
+      setError(rpcError.message);
+      setLoading(false);
       return;
     }
 
