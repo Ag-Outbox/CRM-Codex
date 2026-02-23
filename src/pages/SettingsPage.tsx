@@ -14,9 +14,9 @@ export function SettingsPage() {
     estimatedValue: 28000,
   });
 
-  const submit = (event: FormEvent) => {
+  const submit = async (event: FormEvent) => {
     event.preventDefault();
-    ingestExternalLead(payload);
+    await ingestExternalLead(payload);
   };
 
   return (

@@ -1,22 +1,56 @@
 import { PropsWithChildren, createContext, useContext, useMemo, useState } from 'react';
+import { persistIncomingLead } from '../lib/ingestion-rpc';
 import { aiClassifyLead, detectSource, pickOwnerByRole } from '../lib/integrations';
-import { Activity, IncomingLeadPayload, IntegrationConfig, IntegrationStats, Lead, LeadSource, LeadStage, MembershipRequest, UserProfile } from '../lib/types';
+import {
+  Activity,
+  IncomingLeadPayload,
+  IntegrationConfig,
+  IntegrationStats,
+  Lead,
+  LeadSource,
+  LeadStage,
+  MembershipRequest,
+  UserProfile,
+} from '../lib/types';
 
 const now = new Date().toISOString();
 
 const seedLeads: Lead[] = [
-  { id: 'l1', name: 'William Ueno', company: 'Golf Soluções', stage: 'SHOWUP_001', source: 'INDICACAO', valueBrl: 60000, probability: 50, email: 'william@golf.com', phone: '+5561991043544', state: 'GO', city: 'Goiânia', createdAt: now, updatedAt: now },
-  { id: 'l2', name: 'Andre Salvador', company: 'A Area', stage: 'SHOWUP_002', source: 'FACEBOOK_ADS', valueBrl: 35000, probability: 25, email: 'andre@aarea.com.br', phone: '+556391731262', state: 'SP', city: 'São Paulo', createdAt: now, updatedAt: now, campaign: 'Meta - Fevereiro' },
-  { id: 'l3', name: 'Samia Melo', company: 'Clínica Multi Imagem', stage: 'NEGOCIACAO', source: 'NETWORK', valueBrl: 148000, probability: 70, email: 'samia@clinicamulti.com', phone: '+5561992721189', state: 'MG', city: 'Belo Horizonte', createdAt: now, updatedAt: now },
-  { id: 'l4', name: 'Victor Mina', company: 'ODC', stage: 'NEGOCIACAO', source: 'INDICACAO', valueBrl: 216000, probability: 45, email: 'victor@odc.com', phone: '+5561306247264', state: 'SP', city: 'São Paulo', createdAt: now, updatedAt: now },
-  { id: 'l5', name: 'Eduardo Rena Trigo', company: 'ACT Institute', stage: 'NEGOCIACAO', source: 'WHATSAPP', valueBrl: 30000, probability: 50, email: 'eduardo.trigo@actinstitute.org', phone: '+5561997322387', state: 'DF', city: 'Brasília', createdAt: now, updatedAt: now, channelOrigin: 'WHATSAPP_DIRECT' },
-  { id: 'l6', name: 'Tarcisio', company: 'Syndeo Tech', stage: 'PROPOSTA', source: 'MANUAL', valueBrl: 70000, probability: 60, email: 'tarcisio@syndeo.com', phone: '+5561916787605', state: 'PR', city: 'Curitiba', createdAt: now, updatedAt: now },
+  {
+    id: 'l1',
+    name: 'William Ueno',
+    company: 'Golf Soluções',
+    stage: 'SHOWUP_001',
+    source: 'INDICACAO',
+    valueBrl: 60000,
+    probability: 50,
+    email: 'william@golf.com',
+    phone: '+5561991043544',
+    state: 'GO',
+    city: 'Goiânia',
+    createdAt: now,
+    updatedAt: now,
+  },
+  {
+    id: 'l2',
+    name: 'Andre Salvador',
+    company: 'A Area',
+    stage: 'SHOWUP_002',
+    source: 'FACEBOOK_ADS',
+    valueBrl: 35000,
+    probability: 25,
+    email: 'andre@aarea.com.br',
+    phone: '+556391731262',
+    state: 'SP',
+    city: 'São Paulo',
+    createdAt: now,
+    updatedAt: now,
+    campaign: 'Meta - Fevereiro',
+  },
 ];
 
 const seedActivities: Activity[] = [
-  { id: 'a1', leadId: 'l4', actorName: 'Marcello', type: 'STAGE_CHANGED', message: 'Moveu Victor Mina para NEGOCIAÇÃO', createdAt: now },
-  { id: 'a2', leadId: 'l3', actorName: 'Marcello', type: 'NOTE', message: 'Reunião concluída, aguardando retorno jurídico', createdAt: now },
-  { id: 'a3', leadId: 'l2', actorName: 'Marcello', type: 'ASSIGNED', message: 'Lead atribuído para André Gomes', createdAt: now },
+  { id: 'a1', leadId: 'l1', actorName: 'Marcello', type: 'STAGE_CHANGED', message: 'Moveu William para SHOWUP_001', createdAt: now },
 ];
 
 const seedUsers: UserProfile[] = [
@@ -27,7 +61,6 @@ const seedUsers: UserProfile[] = [
 
 const seedRequests: MembershipRequest[] = [
   { id: 'r1', email: 'vendedor1@empresa.com', requestedRole: 'SALES', status: 'PENDING', createdAt: now },
-  { id: 'r2', email: 'gestor@empresa.com', requestedRole: 'MANAGER', status: 'PENDING', createdAt: now },
 ];
 
 const seedIntegrationConfig: IntegrationConfig = {
@@ -49,7 +82,7 @@ type CrmState = {
   createLead: (input: { name: string; source: LeadSource; stage: LeadStage }) => void;
   decideRequest: (id: string, approve: boolean) => void;
   updateIntegrationConfig: (patch: Partial<IntegrationConfig>) => void;
-  ingestExternalLead: (payload: IncomingLeadPayload) => void;
+  ingestExternalLead: (payload: IncomingLeadPayload) => Promise<void>;
 };
 
 const CrmContext = createContext<CrmState | null>(null);
@@ -108,16 +141,25 @@ export function CrmStoreProvider({ children }: PropsWithChildren) {
     };
 
     setLeads((prev) => [lead, ...prev]);
-    addActivity({ id: crypto.randomUUID(), leadId: lead.id, actorName: 'Marcello', type: 'CREATED', message: `Lead ${lead.name} criado`, createdAt: new Date().toISOString() });
+    addActivity({
+      id: crypto.randomUUID(),
+      leadId: lead.id,
+      actorName: 'Marcello',
+      type: 'CREATED',
+      message: `Lead ${lead.name} criado`,
+      createdAt: new Date().toISOString(),
+    });
   };
 
-  const ingestExternalLead = (payload: IncomingLeadPayload) => {
+  const ingestExternalLead = async (payload: IncomingLeadPayload) => {
     const sourceMeta = detectSource(payload);
     const aiResult = aiClassifyLead(payload);
 
     const shouldCreateFromWhatsapp = sourceMeta.source === 'WHATSAPP' && integrationConfig.whatsappAutomationEnabled;
     const shouldCreateFromMeta = sourceMeta.source === 'FACEBOOK_ADS' && integrationConfig.facebookAdsIngestionEnabled;
     if (!shouldCreateFromWhatsapp && !shouldCreateFromMeta) return;
+
+    await persistIncomingLead(payload);
 
     const selectedStage = integrationConfig.aiLeadScoringEnabled ? aiResult.stage : 'NOVO';
     const selectedProbability = integrationConfig.aiLeadScoringEnabled ? aiResult.probability : 15;
@@ -168,12 +210,15 @@ export function CrmStoreProvider({ children }: PropsWithChildren) {
     setIntegrationConfig((prev) => ({ ...prev, ...patch }));
   };
 
-  const integrationStats: IntegrationStats = useMemo(() => ({
-    whatsappLeads: leads.filter((lead) => lead.source === 'WHATSAPP').length,
-    facebookLeads: leads.filter((lead) => lead.source === 'FACEBOOK_ADS').length,
-    facebookToWhatsappLeads: leads.filter((lead) => lead.channelOrigin === 'FACEBOOK_CLICK_TO_WHATSAPP').length,
-    aiProcessed: leads.filter((lead) => Boolean(lead.aiSummary)).length,
-  }), [leads]);
+  const integrationStats: IntegrationStats = useMemo(
+    () => ({
+      whatsappLeads: leads.filter((lead) => lead.source === 'WHATSAPP').length,
+      facebookLeads: leads.filter((lead) => lead.source === 'FACEBOOK_ADS').length,
+      facebookToWhatsappLeads: leads.filter((lead) => lead.channelOrigin === 'FACEBOOK_CLICK_TO_WHATSAPP').length,
+      aiProcessed: leads.filter((lead) => Boolean(lead.aiSummary)).length,
+    }),
+    [leads],
+  );
 
   const value = useMemo(
     () => ({
