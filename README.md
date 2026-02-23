@@ -31,6 +31,7 @@ Este projeto usa estrutura compatível com shadcn em `src/components/ui`.
 
 ## Executar
 ```bash
+npm run preflight
 npm install
 npm run dev
 ```
@@ -70,3 +71,12 @@ supabase db push
 - `/crm/contatos`
 - `/admin/users`
 - `/settings`
+
+
+## Checklist rápido de preview
+```bash
+npm run preflight
+# se tudo ok:
+supabase db push
+npm run dev
+```
