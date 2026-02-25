@@ -31,8 +31,8 @@ Este projeto usa estrutura compatível com shadcn em `src/components/ui`.
 ## Executar
 ```bash
 npm run preflight
-npm install
-npm run dev
+npm run install:clean
+npm run dev:clean
 ```
 
 ## Variáveis
@@ -93,5 +93,15 @@ Tentativas comuns:
 npm config set registry https://registry.npmjs.org/
 npm config delete proxy
 npm config delete https-proxy
+npm config delete http-proxy
 ```
 Se ainda der 403, a liberação precisa ser feita pela TI da empresa.
+
+
+## Instalação sem proxy (recomendado para rede doméstica)
+Se o ambiente herdou `HTTP_PROXY/HTTPS_PROXY` da rede corporativa, use:
+```bash
+npm run install:clean
+npm run dev:clean
+```
+Esses scripts limpam proxies de ambiente e removem `proxy/https-proxy` do npm config antes de instalar.

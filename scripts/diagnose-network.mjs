@@ -15,7 +15,7 @@ console.log('proxy:', run('npm config get proxy'));
 console.log('https-proxy:', run('npm config get https-proxy'));
 
 console.log('\n== env proxy vars ==');
-for (const key of ['HTTP_PROXY', 'HTTPS_PROXY', 'NO_PROXY', 'http_proxy', 'https_proxy', 'no_proxy']) {
+for (const key of ['HTTP_PROXY', 'HTTPS_PROXY', 'NO_PROXY', 'http_proxy', 'https_proxy', 'no_proxy', 'NPM_CONFIG_HTTP_PROXY', 'NPM_CONFIG_HTTPS_PROXY', 'npm_config_http_proxy', 'npm_config_https_proxy']) {
   console.log(`${key}:`, process.env[key] ?? '(not set)');
 }
 

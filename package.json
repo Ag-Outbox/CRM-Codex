@@ -8,7 +8,9 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "preflight": "node scripts/preflight.mjs",
-    "diagnose:npm": "node scripts/diagnose-network.mjs"
+    "diagnose:npm": "node scripts/diagnose-network.mjs",
+    "install:clean": "node scripts/install-clean.mjs",
+    "dev:clean": "node scripts/dev-clean.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.56.0",
