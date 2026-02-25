@@ -2,7 +2,7 @@
 
 Aplicativo CRM multi-tenant inspirado no BOS e em fluxos do Moskit, com:
 - dashboard (KPIs, donuts, funil, mapa)
-- pipeline Kanban com drag-and-drop
+- pipeline Kanban funcional (movimentação por ações de etapa no card)
 - onboarding de organização
 - fluxo admin de aprovação de usuários
 - ingestão de leads de WhatsApp + Facebook Ads com classificação por IA
@@ -11,7 +11,6 @@ Aplicativo CRM multi-tenant inspirado no BOS e em fluxos do Moskit, com:
 ## Stack
 - React + TypeScript + Vite
 - Tailwind CSS v3
-- dnd-kit
 - Recharts
 - react-simple-maps
 - Supabase (Auth + Postgres + RLS)
@@ -80,3 +79,19 @@ npm run preflight
 supabase db push
 npm run dev
 ```
+
+
+## Diagnóstico para erro 403 na rede corporativa
+Se `npm install` retornar `E403`, rode:
+```bash
+npm run diagnose:npm
+```
+Isso mostra registry, proxy e conectividade HTTP para confirmar bloqueio de rede/política.
+
+Tentativas comuns:
+```bash
+npm config set registry https://registry.npmjs.org/
+npm config delete proxy
+npm config delete https-proxy
+```
+Se ainda der 403, a liberação precisa ser feita pela TI da empresa.
